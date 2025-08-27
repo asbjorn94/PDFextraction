@@ -1,6 +1,7 @@
 import pdfplumber
 import pandas as pd
 import tabulate
+import re
 
 #Pseudo code for database population procedure from PDF
 
@@ -11,11 +12,29 @@ import tabulate
 # Conversion_table_name, DSK_name, DSK_id, unit
 
 #Procedure ===============================================================================================
-# 1 Match fooditem from in conversion table PDF with carbon_footprint to assign product id to conversion_table
+# 1. Properly extract data (clean up from unnecessary information etc.)
+# 2. Extract units (e.g. regex on "g / dl", get only "dl")
+# 3. Transform data
+# 4 Match fooditem from in conversion table PDF with carbon_footprint to assign product id to conversion_table
 #   a. Using fuzzy string matching show the best matching product from the carbon_footprint database with corresponding product_id
-# 2. Extract conversion factor 
+# 5. Extract conversion factor 
 # 
+def rename_columns(df):
+    new_names = []
 
+    for i in range(0,len(df.columns.to_list())):
+        pattern = r"g\s*/\s*(.*)"
+
+        # Extracting the substring
+        match = re.search(pattern, df.columns[i])
+        if match: 
+            new_names.append(match.group(1))
+        else:
+            new_names.append(df.columns[i])
+    
+    df.columns = new_names
+
+    return df
 
 tables = []
 
@@ -64,6 +83,8 @@ for i, table in enumerate(tables):
     #Slice away from "Madvare"-row to the top
     df = df.loc[idx+1:]
 
+    df = rename_columns(df)
+
     print(df)
 
 
@@ -89,12 +110,7 @@ for i, table in enumerate(tables):
 # Make Pandas dataframe containing the following columns:
 # Conversion_table_name, DSK_name, DSK_id, unit, conversion_factor_bf_std, conversion_factor_af_std
 #
-#Procedure ===============================================================================================
-# 1 Match fooditem from in conversion table PDF with carbon_footprint to assign product id to conversion_table
-#   a. Using fuzzy string matching show the best matching product from the carbon_footprint database with corresponding product_id
-# 2. Extract conversion factor together 
-#   a. convert to SI-standardized unit (e.g. "g/dl" is converted assigned to the unit "L" with 
-#      a factor 10 multiplcation of the extracted conversion factor)
-#
-#
-#
+
+
+#Version 3
+# Handle netto/brutto concerns
