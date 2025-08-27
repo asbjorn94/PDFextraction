@@ -41,27 +41,30 @@ with pdfplumber.open("mvfodevarer.pdf") as pdf:
 
 
 #EXTRACTION CODE ====================
-df = pd.DataFrame(tables[0]['data'])
+#For first 5 tables
+for i, table in enumerate(tables):
+    if i == 5: break
+    df = pd.DataFrame(table['data'])
 
-# Remove empty colums and rows
-df.replace("", float("NaN"), inplace=True)
-df.dropna(how='all', axis=1, inplace=True) #Columns
-df.dropna(how = 'all', axis = 0,  inplace = True) #Rows
+    # Remove empty colums and rows
+    df.replace("", float("NaN"), inplace=True)
+    df.dropna(how='all', axis=1, inplace=True) #Columns
+    df.dropna(how = 'all', axis = 0,  inplace = True) #Rows
 
-# Remove everything above headers
-matching_rows = df[df.apply(lambda row: row.astype(str).str.contains('Madvare', case=False, na=False).any(), axis=1)]
+    # Remove everything above headers
+    matching_rows = df[df.apply(lambda row: row.astype(str).str.contains('Madvare', case=False, na=False).any(), axis=1)]
 
-# Get the indices of the matching rows
-idx = matching_rows.index.tolist()[0]
+    # Get the indices of the matching rows
+    idx = matching_rows.index.tolist()[0]
 
-#Extract the cells of this row as these are going to function as header
-new_columns = df.loc[int(idx)].to_list()
-df.columns = new_columns
+    #Extract the cells of this row as these are going to function as header
+    new_columns = df.loc[int(idx)].to_list()
+    df.columns = new_columns
 
-#Slice away from "Madvare"-row to the top
-df = df.loc[idx+1:]
+    #Slice away from "Madvare"-row to the top
+    df = df.loc[idx+1:]
 
-print(df)
+    print(df)
 
 
 
