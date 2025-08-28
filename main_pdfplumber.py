@@ -36,64 +36,82 @@ def rename_columns(df):
 
     return df
 
-tables = []
+def transform_table(df: pd.DataFrame):
 
-with pdfplumber.open("mvfodevarer.pdf") as pdf:
-    # Iterate through each page
-    for page in pdf.pages:
-        # Extract tables from the page
-        page_tables = page.extract_tables({
-           'vertical_strategy': 'lines',
-           'horizontal_strategy': 'lines',
-           'intersection_x_tolerance': 8,
-           'intersection_y_tolerance': 8
-        })
- 
-
-        if page_tables:
-            for table in page_tables:
-                if table:
-                    tables.append({
-                        'page': pdf.pages.index(page) + 1,
-                        'data': table
-                    })
+    headers = df.columns.to_list()
 
 
-#EXTRACTION CODE ====================
-#For first 5 tables
-for i, table in enumerate(tables):
-    if i == 5: break
-    df = pd.DataFrame(table['data'])
+    return df.melt(
+            id_vars=["Madvare"],
+            value_vars=headers[1:],
+            var_name="Enhed",
+            value_name="Konverteringsfaktor"
+            )
 
-    # Remove empty colums and rows
-    df.replace("", float("NaN"), inplace=True)
-    df.dropna(how='all', axis=1, inplace=True) #Columns
-    df.dropna(how = 'all', axis = 0,  inplace = True) #Rows
+def append_tables():
+    tables = []
 
-    # Remove everything above headers
-    matching_rows = df[df.apply(lambda row: row.astype(str).str.contains('Madvare', case=False, na=False).any(), axis=1)]
+    with pdfplumber.open("mvfodevarer.pdf") as pdf:
+        # Iterate through each page
+        for page in pdf.pages:
+            # Extract tables from the page
+            page_tables = page.extract_tables({
+            'vertical_strategy': 'lines',
+            'horizontal_strategy': 'lines',
+            'intersection_x_tolerance': 8,
+            'intersection_y_tolerance': 8
+            })
+    
+            if page_tables:
+                for table in page_tables:
+                    if table:
+                        tables.append({
+                            'page': pdf.pages.index(page) + 1,
+                            'data': table
+                        })
 
-    # Get the indices of the matching rows
-    idx = matching_rows.index.tolist()[0]
+    final_df = pd.DataFrame(columns=['Madvare','Enhed','Konverteringsfaktor'])
 
-    #Extract the cells of this row as these are going to function as header
-    new_columns = df.loc[int(idx)].to_list()
-    df.columns = new_columns
+    #EXTRACTION CODE ====================
+    for i, table in enumerate(tables):
+        if i == 5: #For first 5 tables for now
 
-    #Slice away from "Madvare"-row to the top
-    df = df.loc[idx+1:]
+            #Clean conversion factors from NaN
+            final_df = final_df[final_df['Konverteringsfaktor'].notna()]
+            return final_df
+        
+        df = pd.DataFrame(table['data'])
 
-    df = rename_columns(df)
+        # Remove empty colums and rows
+        df.replace("", float("NaN"), inplace=True)
+        df.dropna(how='all', axis=1, inplace=True) #Columns
+        df.dropna(how = 'all', axis = 0,  inplace = True) #Rows
 
-    print(df)
+        # Remove everything above headers
+        matching_rows = df[df.apply(lambda row: row.astype(str).str.contains('Madvare', case=False, na=False).any(), axis=1)]
+
+        # Get the indices of the matching rows
+        idx = matching_rows.index.tolist()[0]
+
+        #Extract the cells of this row as these are going to function as header
+        new_columns = df.loc[int(idx)].to_list()
+        df.columns = new_columns
+
+        #Slice away from "Madvare"-row to the top
+        df = df.loc[idx+1:]
+
+        df = rename_columns(df)
+        df = transform_table(df)
+        
+        #print(df)
+
+        #Concatenate to final df
+        final_df = pd.concat([final_df, df], axis=0, ignore_index=True)
 
 
-
-
-
-
-
-
+if __name__=="__main__":
+    final_df = append_tables()
+    print(final_df.to_markdown())
 
 
 
