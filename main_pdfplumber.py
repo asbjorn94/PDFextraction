@@ -2,6 +2,8 @@ import pdfplumber
 import pandas as pd
 import tabulate
 import re
+from thefuzz import fuzz
+from db_fetch import dsk_table
 
 #Pseudo code for database population procedure from PDF
 
@@ -48,7 +50,7 @@ def transform_table(df: pd.DataFrame):
             value_name="Konverteringsfaktor"
             )
 
-def append_tables():
+def extracted_pdf_tables() -> pd.DataFrame:
     tables = []
 
     with pdfplumber.open("mvfodevarer.pdf") as pdf:
@@ -108,10 +110,50 @@ def append_tables():
         #Concatenate to final df
         final_df = pd.concat([final_df, df], axis=0, ignore_index=True)
 
+#TODO: Maybe move to other py-file
+def map_to_dsk_items(df : pd.DataFrame):
+    #To append DSK data
+    merged_df = df
+
+    #Insert new columns
+    merged_df[["DSK_id","DSK_product"]] = pd.NA
+
+    #Iterate through dataframe to match with food item from DSK
+    for i, conv_item in merged_df.iterrows():
+        
+        #Ratio, id, dsk_name
+        highest_ratio = (0, -1, "")
+        
+        for j, dsk_item in dsk_table.iterrows():
+            #Evaluate ratio
+            ratio = fuzz.token_set_ratio(conv_item, dsk_item)
+            
+            #If higher than the current highest, update the highest ratio
+            if ratio > highest_ratio[0]:
+                highest_ratio = (ratio, dsk_item['id'], dsk_item['product'])
+
+        #Set the highest ratio in the merged_df
+        merged_df.at[i,'DSK_id'] = highest_ratio[1]        
+        merged_df.at[i,'DSK_product'] = highest_ratio[2]
+
+    return merged_df
 
 if __name__=="__main__":
-    final_df = append_tables()
-    print(final_df.to_markdown())
+    extracted_tables = extracted_pdf_tables()
+    mapped_df = map_to_dsk_items(extracted_tables)
+        
+    print(mapped_df.to_markdown())        
+    
+       
+            
+    
+
+
+         
+
+
+
+    #print(final_df.to_markdown())
 
 
 
