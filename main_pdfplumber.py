@@ -110,6 +110,12 @@ def extracted_pdf_tables() -> pd.DataFrame:
         #Concatenate to final df
         final_df = pd.concat([final_df, df], axis=0, ignore_index=True)
 
+def enable_word_comparability(s : str):
+    s = s.lower()
+    s = s.replace(",","")
+    word_list = s.split(" ")
+    return word_list
+
 #TODO: Maybe move to other py-file
 def map_to_dsk_items(df : pd.DataFrame):
     #To append DSK data
@@ -122,15 +128,24 @@ def map_to_dsk_items(df : pd.DataFrame):
     for i, conv_item in merged_df.iterrows():
         
         #Ratio, id, dsk_name
-        highest_ratio = (0, -1, "")
+        highest_ratio = (0, pd.NA, pd.NA)
+        conv_item_words : str = enable_word_comparability(conv_item['Madvare'])
         
         for j, dsk_item in dsk_table.iterrows():
-            #Evaluate ratio
-            ratio = fuzz.token_set_ratio(conv_item, dsk_item)
             
-            #If higher than the current highest, update the highest ratio
-            if ratio > highest_ratio[0]:
-                highest_ratio = (ratio, dsk_item['id'], dsk_item['product'])
+            dsk_item_words : str = enable_word_comparability(dsk_item['product'])
+
+            #Minimum requirement: One word overlap
+            if any(i in conv_item_words for i in dsk_item_words):
+                #If two lists have overlapping word, evaluate ratio
+                ratio = fuzz.token_set_ratio(conv_item['Madvare'], dsk_item['product'])
+
+                #If higher than the current highest, update the highest ratio
+                if ratio > highest_ratio[0]:
+                    highest_ratio = (ratio, dsk_item['id'], dsk_item['product'])
+            else: #Otherwise ignore
+                continue
+
 
         #Set the highest ratio in the merged_df
         merged_df.at[i,'DSK_id'] = highest_ratio[1]        
@@ -141,7 +156,7 @@ def map_to_dsk_items(df : pd.DataFrame):
 if __name__=="__main__":
     extracted_tables = extracted_pdf_tables()
     mapped_df = map_to_dsk_items(extracted_tables)
-        
+    
     print(mapped_df.to_markdown())        
     
        
