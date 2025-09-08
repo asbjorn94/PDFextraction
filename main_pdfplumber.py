@@ -50,10 +50,11 @@ def transform_table(df: pd.DataFrame):
             value_name="Konverteringsfaktor"
             )
 
-def extracted_pdf_tables() -> pd.DataFrame:
+#Used for initial extraction
+def extract_pdf_tables(filename : str) -> dict:
     tables = []
 
-    with pdfplumber.open("mvfodevarer.pdf") as pdf:
+    with pdfplumber.open(filename) as pdf:
         # Iterate through each page
         for page in pdf.pages:
             # Extract tables from the page
@@ -72,11 +73,22 @@ def extracted_pdf_tables() -> pd.DataFrame:
                             'data': table
                         })
 
+    return tables
+
+#Used for raw printing
+def print_tables(tables : dict):
+    for i, table in enumerate(tables):
+        print(f"\nTable {i+1} out of {len(tables)}")
+        df = pd.DataFrame(table['data'])
+        print(df.to_markdown())
+
+def curate_tables(tables):
+
     final_df = pd.DataFrame(columns=['Madvare','Enhed','Konverteringsfaktor'])
 
-    #EXTRACTION CODE ====================
+    #CURATION CODE ====================
     for i, table in enumerate(tables):
-        if i == 5: #For first 5 tables for now
+        if i == 5: #For first 5 tables for now - only that works
 
             #Clean conversion factors from NaN
             final_df = final_df[final_df['Konverteringsfaktor'].notna()]
@@ -105,9 +117,9 @@ def extracted_pdf_tables() -> pd.DataFrame:
         df = rename_columns(df)
         df = transform_table(df)
         
-        #print(df)
+        # #print(df)
 
-        #Concatenate to final df
+        # #Concatenate to final df
         final_df = pd.concat([final_df, df], axis=0, ignore_index=True)
 
 def enable_word_comparability(s : str):
@@ -154,13 +166,16 @@ def map_to_dsk_items(df : pd.DataFrame):
     return merged_df
 
 if __name__=="__main__":
-    extracted_tables = extracted_pdf_tables()
-    mapped_df = map_to_dsk_items(extracted_tables)
+    extracted : dict = extract_pdf_tables("mvfodevarer.pdf")
+    curated : pd.DataFrame = curate_tables(extracted)
+    print(curated.to_markdown())
+    #print_tables(extracted)
+    #mapped_df = map_to_dsk_items(extracted_tables)
     
-    print(mapped_df.to_markdown())        
+    #print(extracted_tables.to_markdown())        
     
        
-            
+        
     
 
 
