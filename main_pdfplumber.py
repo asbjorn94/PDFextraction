@@ -75,6 +75,21 @@ def extract_pdf_tables(filename : str) -> dict:
 
     return tables
 
+def split_table(df, index):
+    #Go one row up and send that for header "curation"
+    header = df.iloc[:index,:]
+    #Rest goes as data
+    data = df.iloc[index:,:]
+
+    print("HEADER:")
+    print(header.to_markdown())
+    print("DATA:")
+    print(data.to_markdown())
+
+    #Pseudo code for upcoming methods:
+    #curate_header(header)
+    #curate_data(data)
+
 def detect_header(tables : dict):
     for i, table in enumerate(tables):
         if i != 19: continue #For testing
@@ -91,39 +106,29 @@ def detect_header(tables : dict):
 
         print(df.to_markdown())
 
-        n_columns = len(df.columns)
-
         look_for_data = False # To monitor whether "Madvare" has been "passed"
         for j, row in df.iterrows(): #Running through rows
-            cur_row = df.iloc[j,1] #TODO: Rename
-            print(f"cur_row: {cur_row}")
+            food_item_cell = df.iloc[j,1] #TODO: Rename
 
             if j == 10: break #For testing
 
             if look_for_data == True:
                 #Iterate through all cells in row                
-                print(f"leftmost cell of row: <{cur_row}>")
-                # print(f"cur_row: {type(cur_row)}")
 
-                if cur_row == "": #Nothing detected (empty string) in the first column -> go on investigating rest of cells
-                    # print("Hey ho")
+                #1 Check first cell for non-empty string
+                if food_item_cell != "": #Food item found - data starts
+                    split_table(df, j)
+                    return
+                #2 If not found, check rest of cells for numbers
+                else:
                     for k in range(1,len(row)):
-                        #print(f"k: {k}")
-                        print(f"row[k]: {row[k]}")
-                        #print(f"row[k] type: {type(row[k])}")
-                        
                         if any(char.isdigit() for char in row[k]):
-                            print(f"Numeric value found!")
-                            print(f"Index: {j}")
+                            split_table(df, j)
+                            return
 
-            if cur_row.__contains__("Madvare"):          #Check for "Madvare in column 1"
+            if food_item_cell.__contains__("Madvare"): #Check for "Madvare in column 1"
                 look_for_data = True
                 print(f"Madvare found at row index {j}")
-
-            
-
-
-
 
 #Used for raw printing
 def print_tables(tables : dict):
