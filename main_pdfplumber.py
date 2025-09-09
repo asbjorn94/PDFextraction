@@ -75,9 +75,62 @@ def extract_pdf_tables(filename : str) -> dict:
 
     return tables
 
+def detect_header(tables : dict):
+    for i, table in enumerate(tables):
+        if i != 19: continue #For testing
+        
+        page = table['page']
+        df = pd.DataFrame(table['data'])
+
+        #Convert Nonetype to empty string for consistency
+        df = df.fillna("")
+
+        # if page == 3: break # For testing
+        print(f"Page {page}")
+        print(f"\nTable {i+1} out of {len(tables)}")
+
+        print(df.to_markdown())
+
+        n_columns = len(df.columns)
+
+        look_for_data = False # To monitor whether "Madvare" has been "passed"
+        for j, row in df.iterrows(): #Running through rows
+            cur_row = df.iloc[j,1] #TODO: Rename
+            print(f"cur_row: {cur_row}")
+
+            if j == 10: break #For testing
+
+            if look_for_data == True:
+                #Iterate through all cells in row                
+                print(f"leftmost cell of row: <{cur_row}>")
+                # print(f"cur_row: {type(cur_row)}")
+
+                if cur_row == "": #Nothing detected (empty string) in the first column -> go on investigating rest of cells
+                    # print("Hey ho")
+                    for k in range(1,len(row)):
+                        #print(f"k: {k}")
+                        print(f"row[k]: {row[k]}")
+                        #print(f"row[k] type: {type(row[k])}")
+                        
+                        if any(char.isdigit() for char in row[k]):
+                            print(f"Numeric value found!")
+                            print(f"Index: {j}")
+
+            if cur_row.__contains__("Madvare"):          #Check for "Madvare in column 1"
+                look_for_data = True
+                print(f"Madvare found at row index {j}")
+
+            
+
+
+
+
 #Used for raw printing
 def print_tables(tables : dict):
     for i, table in enumerate(tables):
+        page = table['page']
+        if page == 13: break # For testing
+        print(f"Page {table['page']}")
         print(f"\nTable {i+1} out of {len(tables)}")
         df = pd.DataFrame(table['data'])
         print(df.to_markdown())
@@ -167,9 +220,10 @@ def map_to_dsk_items(df : pd.DataFrame):
 
 if __name__=="__main__":
     extracted : dict = extract_pdf_tables("mvfodevarer.pdf")
-    curated : pd.DataFrame = curate_tables(extracted)
-    print(curated.to_markdown())
-    #print_tables(extracted)
+    detect_header(extracted)
+    # curated : pd.DataFrame = curate_tables(extracted)
+    # print(curated.to_markdown())
+    # print_tables(extracted)
     #mapped_df = map_to_dsk_items(extracted_tables)
     
     #print(extracted_tables.to_markdown())        
