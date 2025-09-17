@@ -1,6 +1,6 @@
 __pycache__
+archive_jupyter
 
 *.pdf
 *.txt
-*.ipynb
 *.env
