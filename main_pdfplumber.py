@@ -110,7 +110,7 @@ def detect_header(tables : dict):
         for j, row in df.iterrows(): #Running through rows
             food_item_cell = df.iloc[j,1] #TODO: Rename
 
-            if j == 10: break #For testing
+            #if j == 10: break #For testing
 
             if look_for_data == True:
                 #Iterate through all cells in row                
@@ -225,13 +225,12 @@ def map_to_dsk_items(df : pd.DataFrame):
 
 if __name__=="__main__":
     extracted : dict = extract_pdf_tables("mvfodevarer.pdf")
-    detect_header(extracted)
-    # curated : pd.DataFrame = curate_tables(extracted)
+    curated : pd.DataFrame = curate_tables(extracted)
     # print(curated.to_markdown())
     # print_tables(extracted)
-    #mapped_df = map_to_dsk_items(extracted_tables)
+    mapped_df = map_to_dsk_items(curated)
     
-    #print(extracted_tables.to_markdown())        
+    print(mapped_df.to_markdown())        
     
        
         
