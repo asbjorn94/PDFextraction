@@ -52,83 +52,78 @@ def transform_table(df: pd.DataFrame):
 
 #Used for initial extraction
 def extract_pdf_tables(filename : str) -> dict:
+    def extract_coordinates(rect):
+        return (rect['x0'], rect['x1'],rect['y0'],rect['y1'])
+
+    def convert_float_to_int(t):
+        return tuple(int(x) for x in t)    
+
+    def is_nested(rect, other_rect):    
+        rect_coords = extract_coordinates(rect)
+        other_rect_coords = extract_coordinates(other_rect)
+        rect_coords = convert_float_to_int(rect_coords) #Convert floating point to integers to avoid issues caused by rounding errors
+        other_rect_coords = convert_float_to_int(other_rect_coords) #Convert floating point to integers to avoid issues caused by rounding errors
+        (x0,x1,y0,y1) = rect_coords
+        (x0_o,x1_o,y0_o,y1_o) = other_rect_coords
+
+        return x0_o <= x0 and x1_o >= x1 and y0_o <= y0 and y1_o >= y1
+
+    def find_cells_on_page(page):
+        selected_rects = []
+
+        initial_j = 0
+
+        for i in range(0,len(page.rects)):
+            rect = page.rects[i]
+            if rect['height'] < 1 or rect['width'] < 1: continue #1 Ignore small rectangles
+
+            #Look for rectangles that might encapsulate current rectangle on page
+            for j in range(initial_j,len(page.rects)):
+                #print(f"(i,j): ({i},{j})")
+                other_rect = page.rects[j]
+                if j == i: #Assumption: rectangles with index > i will never encapsulate rectangle i.
+                    #print(f"added rect {i} to selected rects")
+                    selected_rects.append(rect)
+                    break
+                elif is_nested(rect, other_rect):
+                    initial_j = j #Displace the starting point to search for rectangles that nest rectangle i.
+                    break
+        
+        return selected_rects
+
+    def curate_table(table):
+        table = table[1:] #Removing first item since it is irrelevant
+        #table = [[replace_newlines(cell) for cell in row] for row in table] #Replace newline characters with whitespace #TODO
+        headers = table[0] #Extracting headers    
+        table = table[1:] #Removing headers from data
+        return pd.DataFrame(table, columns=headers)
+    
     tables = []
 
     with pdfplumber.open(filename) as pdf:
         # Iterate through each page
         for page in pdf.pages:
+
+            #Find cells on page
+            cells_found = find_cells_on_page(page) 
+            
             # Extract tables from the page
             page_tables = page.extract_tables({
-            'vertical_strategy': 'lines',
-            'horizontal_strategy': 'lines',
-            'intersection_x_tolerance': 8,
-            'intersection_y_tolerance': 8
+                "vertical_strategy": "explicit",
+                "horizontal_strategy": "explicit",
+                "explicit_vertical_lines": cells_found,
+                "explicit_horizontal_lines": cells_found,
             })
     
             if page_tables:
                 for table in page_tables:
                     if table:
-                        tables.append({
-                            'page': pdf.pages.index(page) + 1,
-                            'data': table
-                        })
-
+                        curated_table = curate_table(table)
+                        tables.append(curated_table)
+                        # print(curated_table.to_markdown())
+                        # print()
+    
     return tables
-
-def split_table(df, index):
-    #Go one row up and send that for header "curation"
-    header = df.iloc[:index,:]
-    #Rest goes as data
-    data = df.iloc[index:,:]
-
-    print("HEADER:")
-    print(header.to_markdown())
-    print("DATA:")
-    print(data.to_markdown())
-
-    #Pseudo code for upcoming methods:
-    #curate_header(header)
-    #curate_data(data)
-
-def detect_header(tables : dict):
-    for i, table in enumerate(tables):
-        if i != 19: continue #For testing
-        
-        page = table['page']
-        df = pd.DataFrame(table['data'])
-
-        #Convert Nonetype to empty string for consistency
-        df = df.fillna("")
-
-        # if page == 3: break # For testing
-        print(f"Page {page}")
-        print(f"\nTable {i+1} out of {len(tables)}")
-
-        print(df.to_markdown())
-
-        look_for_data = False # To monitor whether "Madvare" has been "passed"
-        for j, row in df.iterrows(): #Running through rows
-            food_item_cell = df.iloc[j,1] #TODO: Rename
-
-            #if j == 10: break #For testing
-
-            if look_for_data == True:
-                #Iterate through all cells in row                
-
-                #1 Check first cell for non-empty string
-                if food_item_cell != "": #Food item found - data starts
-                    split_table(df, j)
-                    return
-                #2 If not found, check rest of cells for numbers
-                else:
-                    for k in range(1,len(row)):
-                        if any(char.isdigit() for char in row[k]):
-                            split_table(df, j)
-                            return
-
-            if food_item_cell.__contains__("Madvare"): #Check for "Madvare in column 1"
-                look_for_data = True
-                print(f"Madvare found at row index {j}")
 
 #Used for raw printing
 def print_tables(tables : dict):
@@ -225,12 +220,17 @@ def map_to_dsk_items(df : pd.DataFrame):
 
 if __name__=="__main__":
     extracted : dict = extract_pdf_tables("mvfodevarer.pdf")
-    curated : pd.DataFrame = curate_tables(extracted)
-    # print(curated.to_markdown())
-    # print_tables(extracted)
-    mapped_df = map_to_dsk_items(curated)
     
-    print(mapped_df.to_markdown())        
+    for table in extracted:
+        print(table.to_markdown())
+        print()
+    
+    # curated : pd.DataFrame = curate_tables(extracted)
+    # # print(curated.to_markdown())
+    # # print_tables(extracted)
+    # mapped_df = map_to_dsk_items(curated)
+    
+    # print(mapped_df.to_markdown())        
     
        
         
