@@ -1,26 +1,9 @@
 import pdfplumber
 import pandas as pd
-import tabulate
 import re
 from thefuzz import fuzz
 from db_fetch import dsk_table
 
-#Pseudo code for database population procedure from PDF
-
-#Version 1, page 1
-
-#Preperation ===============================================================================================
-# Make Pandas dataframe containing the following columns:
-# Conversion_table_name, DSK_name, DSK_id, unit
-
-#Procedure ===============================================================================================
-# 1. Properly extract data (clean up from unnecessary information etc.)
-# 2. Extract units (e.g. regex on "g / dl", get only "dl")
-# 3. Transform data
-# 4 Match fooditem from in conversion table PDF with carbon_footprint to assign product id to conversion_table
-#   a. Using fuzzy string matching show the best matching product from the carbon_footprint database with corresponding product_id
-# 5. Extract conversion factor 
-# 
 def rename_columns(df):
     new_names = []
 
@@ -41,7 +24,6 @@ def rename_columns(df):
 def transform_table(df: pd.DataFrame):
 
     headers = df.columns.to_list()
-
 
     return df.melt(
             id_vars=["Madvare"],
@@ -229,36 +211,4 @@ if __name__=="__main__":
     # # print(curated.to_markdown())
     # # print_tables(extracted)
     # mapped_df = map_to_dsk_items(curated)
-    
     # print(mapped_df.to_markdown())        
-    
-       
-        
-    
-
-
-         
-
-
-
-    #print(final_df.to_markdown())
-
-
-
-
-
-
-
-
-
-#
-#
-#Version 2
-#Preperation ===============================================================================================
-# Make Pandas dataframe containing the following columns:
-# Conversion_table_name, DSK_name, DSK_id, unit, conversion_factor_bf_std, conversion_factor_af_std
-#
-
-
-#Version 3
-# Handle netto/brutto concerns
