@@ -201,7 +201,7 @@ def map_to_dsk_items(df : pd.DataFrame):
     return merged_df
 
 if __name__=="__main__":
-    extracted : dict = extract_pdf_tables("mvfodevarer.pdf")
+    extracted : dict = extract_pdf_tables("pdfs/mvfodevarer.pdf")
     
     for table in extracted:
         print(table.to_markdown())
