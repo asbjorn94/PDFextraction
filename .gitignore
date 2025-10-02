@@ -1,7 +1,9 @@
 .vscode
+.venv
 __pycache__
 archive_jupyter
 archive_py
+pdfs
 
 *.pdf
 *.env
