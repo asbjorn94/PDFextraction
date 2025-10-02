@@ -212,15 +212,26 @@ def clean_data(df : pd.DataFrame) -> pd.DataFrame:
     return df
 
 #DATA SELECTION/EXCLUSION ========================================================================================================================
-def exclude_data(df : pd.DataFrame) -> pd.DataFrame:
-    return pd.DataFrame()
+def select_data(df : pd.DataFrame) -> pd.DataFrame:
+    #Unit-based selection
+    selected_units = ['dl', 'spsk', 'tsk', 'lille', 'mellem', 'stor']
+    result = df[df['Enhed'].isin(selected_units)]
+    
+    return result
+
+#DATA EXPORT ========================================================================================================================
+def export_data(data : pd.DataFrame) -> None:
+    with open("output.txt", "w") as f:
+        f.write(data.to_markdown()) 
+          
 
 #MAIN ========================================================================================================================
 if __name__=="__main__":
     filename = "maal_vaegt_portionsstoerrelser_marts_13_cropped.pdf"
     data : pd.DataFrame = create_conversion_factor_table(filename)
     data = clean_data(data)
-    
-    with open("output.txt", "w") as f:
-        f.write(data.to_markdown())
-    print("Done")
+    data = select_data(data)
+    export_data(data)
+    print("") 
+    print("Main-function finished") 
+    print("") 
