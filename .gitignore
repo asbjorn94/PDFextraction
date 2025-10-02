@@ -4,5 +4,4 @@ archive_jupyter
 archive_py
 
 *.pdf
-*.txt
 *.env
