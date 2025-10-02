@@ -7,3 +7,4 @@ pdfs
 
 *.pdf
 *.env
+*.ipynb
